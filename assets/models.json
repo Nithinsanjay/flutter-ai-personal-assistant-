@@ -1,0 +1,29 @@
+{
+    "models": [
+        {
+            "name": "Gemma‑4‑E2B‑it",
+            "sizeGB": 2.59,
+            "description": "A variant of Gemma 4 E2B ready for deployment using LiteRT‑LM. Supports text input up to 32K context length.",
+            "modelFile": "gemma‑4‑E2B‑it.litertlm",
+            "commitHash": "7fa1d78473894f7e736d21920c3aa80f59cc0db",
+            "accelerators": [
+                "gpu",
+                "cpu"
+            ],
+            "updateAvailable": true,
+            "bestOverall": true
+        },
+        {
+            "name": "Qwen‑3‑0.6B",
+            "sizeGB": 0.63,
+            "description": "Lightweight Qwen model optimized for on‑device inference. Ideal for fast text generation and reasoning.",
+            "modelFile": "qwen‑3‑0.6b.litertlm",
+            "commitHash": "b9e2f4a7d1a8e3c9f0a2d7b6e1c4f8a9d3e2c1b0",
+            "accelerators": [
+                "cpu"
+            ],
+            "updateAvailable": false,
+            "bestOverall": false
+        }
+    ]
+}
