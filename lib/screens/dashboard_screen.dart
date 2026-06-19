@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import 'calendar_screen.dart';
+import '../models/task_item.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});

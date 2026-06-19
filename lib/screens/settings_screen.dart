@@ -96,56 +96,75 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Card(
-              elevation: 0,
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: const BorderSide(color: Color(0xFFE2E8F0)),
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.psychology,
-                    color: Color(0xFF7C3AED),
-                    size: 18,
-                  ),
-                ),
-                title: const Text(
-                  'Configuration Models',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F172A),
-                  ),
-                ),
-                subtitle: const Text(
-                  'Select and manage on-device models',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                ),
-                trailing: const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 14,
-                  color: Color(0xFF64748B),
-                ),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const ConfigurationSection(),
-                    ),
-                  );
-                },
-              ),
-            ),
+
+            // Card(
+            //   elevation: 0,
+            //   color: Colors.white,
+            //   shape: RoundedRectangleBorder(
+            //     borderRadius: BorderRadius.circular(14),
+            //     side: const BorderSide(color: Color(0xFFE2E8F0)),
+            //   ),
+            //   child: ListTile(
+            //     contentPadding: const EdgeInsets.symmetric(
+            //       horizontal: 16,
+            //       vertical: 8,
+            //     ),
+            //     leading: Container(
+            //       padding: const EdgeInsets.all(8),
+            //       decoration: BoxDecoration(
+            //         color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
+            //         borderRadius: BorderRadius.circular(8),
+            //       ),
+            //       child: const Icon(
+            //         Icons.psychology,
+            //         color: Color(0xFF7C3AED),
+            //         size: 18,
+            //       ),
+            //     ),
+            //     title: const Text(
+            //       'Configuration Models',
+            //       style: TextStyle(
+            //         fontSize: 15,
+            //         fontWeight: FontWeight.w600,
+            //         color: Color(0xFF0F172A),
+            //       ),
+            //     ),
+            //     subtitle: const Text(
+            //       'Select and manage on-device models',
+            //       style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+            //     ),
+            //     trailing: const Icon(
+            //       Icons.arrow_forward_ios,
+            //       size: 14,
+            //       color: Color(0xFF64748B),
+            //     ),
+            //     onTap: () {
+            //       Navigator.of(context).push(
+            //         MaterialPageRoute(
+            //           builder: (context) => Scaffold(
+            //             backgroundColor: const Color(0xFFF8FAFC),
+            //             appBar: AppBar(
+            //               backgroundColor: Colors.transparent,
+            //               elevation: 0,
+            //               title: const Text(
+            //                 'Configuration Models',
+            //                 style: TextStyle(
+            //                   fontWeight: FontWeight.bold,
+            //                   color: Color(0xFF0F172A),
+            //                 ),
+            //               ),
+            //             ),
+            //             body: const SingleChildScrollView(
+            //               padding: EdgeInsets.all(16),
+            //               child: ConfigurationSection(),
+            //             ),
+            //           ),
+            //         ),
+            //       );
+            //     },
+            //   ),
+            // ),
+            ConfigurationSection(),
 
             const SizedBox(height: 28),
 

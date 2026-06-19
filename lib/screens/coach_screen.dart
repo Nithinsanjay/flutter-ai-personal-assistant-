@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../state/app_state.dart';
+import '../models/coach_message.dart';
 
 class CoachScreen extends StatefulWidget {
   const CoachScreen({super.key});
@@ -48,7 +50,8 @@ class _CoachScreenState extends State<CoachScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateProvider.of(context);
+    // final state = AppStateProvider.of(context);
+    final state = context.read<AppState>();
 
     final completedCount = state.tasks
         .where((t) => t.status == 'Completed')

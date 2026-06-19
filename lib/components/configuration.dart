@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
+import '../models/model.info.dart';
 
 class ConfigurationSection extends StatelessWidget {
   const ConfigurationSection({super.key});
@@ -75,11 +76,13 @@ class ConfigurationSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  model.name,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    model.name,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 if (model.status == 'connected')
@@ -114,6 +117,20 @@ class ConfigurationSection extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(model.description),
+            if (model.localPath != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Saved at ${model.localPath}',
+                style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+              ),
+            ],
+            if (model.errorMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                model.errorMessage!,
+                style: const TextStyle(color: Colors.red, fontSize: 12),
+              ),
+            ],
             const SizedBox(height: 12),
 
             // State-driven UI

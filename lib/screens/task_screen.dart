@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../state/app_state.dart';
+import '../models/task_item.dart';
 
 class TaskScreen extends StatelessWidget {
   const TaskScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateProvider.of(context);
+    // final state = AppStateProvider.of(context)
+    final state = context.read<AppState>();
 
     final todayTasks = state.tasks.where((t) => t.status == 'Today').toList();
-    final inProgressTasks = state.tasks.where((t) => t.status == 'InProgress').toList();
-    final completedTasks = state.tasks.where((t) => t.status == 'Completed').toList();
+    final inProgressTasks = state.tasks
+        .where((t) => t.status == 'InProgress')
+        .toList();
+    final completedTasks = state.tasks
+        .where((t) => t.status == 'Completed')
+        .toList();
 
     return DefaultTabController(
       length: 3,
@@ -21,7 +28,10 @@ class TaskScreen extends StatelessWidget {
           elevation: 0,
           title: const Text(
             'Tasks',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
           ),
           bottom: const TabBar(
             indicatorColor: Color(0xFF4F46E5),
@@ -43,18 +53,28 @@ class TaskScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 ...todayTasks.map((t) => _buildTaskCard(context, t, state)),
                 const SizedBox(height: 24),
-                
-                _buildSectionHeader('In Progress', inProgressTasks.length, Colors.amber),
+
+                _buildSectionHeader(
+                  'In Progress',
+                  inProgressTasks.length,
+                  Colors.amber,
+                ),
                 const SizedBox(height: 8),
-                ...inProgressTasks.map((t) => _buildTaskCard(context, t, state)),
+                ...inProgressTasks.map(
+                  (t) => _buildTaskCard(context, t, state),
+                ),
                 const SizedBox(height: 24),
-                
-                _buildSectionHeader('Completed', completedTasks.length, Colors.green),
+
+                _buildSectionHeader(
+                  'Completed',
+                  completedTasks.length,
+                  Colors.green,
+                ),
                 const SizedBox(height: 8),
                 ...completedTasks.map((t) => _buildTaskCard(context, t, state)),
               ],
             ),
-            
+
             ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: state.tasks.length,
@@ -64,17 +84,24 @@ class TaskScreen extends StatelessWidget {
                 return _buildTaskCard(context, task, state);
               },
             ),
-            
+
             completedTasks.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle_outline, size: 64, color: Colors.grey[300]),
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
                         const SizedBox(height: 16),
                         Text(
                           'No completed tasks yet',
-                          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
                         ),
                       ],
                     ),
@@ -82,7 +109,8 @@ class TaskScreen extends StatelessWidget {
                 : ListView.separated(
                     padding: const EdgeInsets.all(16),
                     itemCount: completedTasks.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 10),
                     itemBuilder: (context, index) {
                       final task = completedTasks[index];
                       return _buildTaskCard(context, task, state);
@@ -105,15 +133,16 @@ class TaskScreen extends StatelessWidget {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A), fontSize: 14),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF0F172A),
+            fontSize: 14,
+          ),
         ),
         const SizedBox(width: 8),
         Container(
@@ -124,7 +153,11 @@ class TaskScreen extends StatelessWidget {
           ),
           child: Text(
             '$count',
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 10, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -179,7 +212,9 @@ class TaskScreen extends StatelessWidget {
               onChanged: (val) {
                 state.updateTaskStatus(
                   task.id,
-                  val == true ? 'Completed' : (task.status == 'Completed' ? 'Today' : 'Completed'),
+                  val == true
+                      ? 'Completed'
+                      : (task.status == 'Completed' ? 'Today' : 'Completed'),
                 );
               },
               activeColor: const Color(0xFF4F46E5),
@@ -196,7 +231,9 @@ class TaskScreen extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF0F172A),
-                      decoration: isCompleted ? TextDecoration.lineThrough : null,
+                      decoration: isCompleted
+                          ? TextDecoration.lineThrough
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -213,18 +250,32 @@ class TaskScreen extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         task.priority,
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      const Icon(Icons.access_time, color: Colors.grey, size: 12),
+                      const Icon(
+                        Icons.access_time,
+                        color: Colors.grey,
+                        size: 12,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         task.time,
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                       if (task.sourceEmailId != null) ...[
                         const SizedBox(width: 12),
-                        const Icon(Icons.email, color: Color(0xFF4F46E5), size: 12),
+                        const Icon(
+                          Icons.email,
+                          color: Color(0xFF4F46E5),
+                          size: 12,
+                        ),
                       ],
                     ],
                   ),
@@ -232,7 +283,11 @@ class TaskScreen extends StatelessWidget {
               ),
             ),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Color(0xFF64748B), size: 18),
+              icon: const Icon(
+                Icons.more_vert,
+                color: Color(0xFF64748B),
+                size: 18,
+              ),
               color: Colors.white,
               onSelected: (value) {
                 state.updateTaskStatus(task.id, value);
@@ -240,15 +295,24 @@ class TaskScreen extends StatelessWidget {
               itemBuilder: (context) => [
                 const PopupMenuItem(
                   value: 'Today',
-                  child: Text('Move to Today', style: TextStyle(color: Color(0xFF0F172A))),
+                  child: Text(
+                    'Move to Today',
+                    style: TextStyle(color: Color(0xFF0F172A)),
+                  ),
                 ),
                 const PopupMenuItem(
                   value: 'InProgress',
-                  child: Text('Move to In Progress', style: TextStyle(color: Color(0xFF0F172A))),
+                  child: Text(
+                    'Move to In Progress',
+                    style: TextStyle(color: Color(0xFF0F172A)),
+                  ),
                 ),
                 const PopupMenuItem(
                   value: 'Completed',
-                  child: Text('Complete Task', style: TextStyle(color: Color(0xFF0F172A))),
+                  child: Text(
+                    'Complete Task',
+                    style: TextStyle(color: Color(0xFF0F172A)),
+                  ),
                 ),
               ],
             ),
@@ -270,7 +334,10 @@ class TaskScreen extends StatelessWidget {
           builder: (context, setDialogState) {
             return AlertDialog(
               backgroundColor: Colors.white,
-              title: const Text('Create New Task', style: TextStyle(color: Color(0xFF0F172A))),
+              title: const Text(
+                'Create New Task',
+                style: TextStyle(color: Color(0xFF0F172A)),
+              ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -283,14 +350,19 @@ class TaskScreen extends StatelessWidget {
                       hintStyle: const TextStyle(color: Color(0xFF64748B)),
                       filled: true,
                       fillColor: const Color(0xFFF1F5F9),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Priority:', style: TextStyle(color: Color(0xFF0F172A))),
+                      const Text(
+                        'Priority:',
+                        style: TextStyle(color: Color(0xFF0F172A)),
+                      ),
                       DropdownButton<String>(
                         dropdownColor: Colors.white,
                         value: priority,
@@ -304,7 +376,10 @@ class TaskScreen extends StatelessWidget {
                         items: ['High', 'Medium', 'Low'].map((String val) {
                           return DropdownMenuItem<String>(
                             value: val,
-                            child: Text(val, style: const TextStyle(color: Color(0xFF0F172A))),
+                            child: Text(
+                              val,
+                              style: const TextStyle(color: Color(0xFF0F172A)),
+                            ),
                           );
                         }).toList(),
                       ),
@@ -313,7 +388,10 @@ class TaskScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Time:', style: TextStyle(color: Color(0xFF0F172A))),
+                      const Text(
+                        'Time:',
+                        style: TextStyle(color: Color(0xFF0F172A)),
+                      ),
                       TextButton(
                         onPressed: () async {
                           final selectedTime = await showTimePicker(
@@ -326,7 +404,10 @@ class TaskScreen extends StatelessWidget {
                             });
                           }
                         },
-                        child: Text(time, style: const TextStyle(color: Color(0xFF4F46E5))),
+                        child: Text(
+                          time,
+                          style: const TextStyle(color: Color(0xFF4F46E5)),
+                        ),
                       ),
                     ],
                   ),
@@ -335,20 +416,35 @@ class TaskScreen extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () {
                     if (titleController.text.isNotEmpty) {
-                      state.addManualTask(titleController.text, time, priority, 'Today');
+                      state.addManualTask(
+                        titleController.text,
+                        time,
+                        priority,
+                        'Today',
+                      );
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Task added successfully!')),
+                        const SnackBar(
+                          content: Text('Task added successfully!'),
+                        ),
                       );
                     }
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF4F46E5)),
-                  child: const Text('Create', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4F46E5),
+                  ),
+                  child: const Text(
+                    'Create',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             );

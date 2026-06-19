@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../state/app_state.dart';
+import '../models/email.dart';
+
 
 class EmailInboxScreen extends StatefulWidget {
   const EmailInboxScreen({super.key});
@@ -15,7 +18,8 @@ class _EmailInboxScreenState extends State<EmailInboxScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateProvider.of(context);
+    // final state = AppStateProvider.of(context);
+    final state = context.read<AppState>();
 
     List<EmailItem> filteredEmails = state.emails.where((email) {
       if (_activeTab != 'All' && email.priority != _activeTab) {
@@ -340,7 +344,9 @@ class _EmailDetailScreenState extends State<EmailDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateProvider.of(context);
+    // final state = AppStateProvider.of(context);
+    final state = context.read<AppState>();
+    
     final hasGeneratedTask = state.tasks.any(
       (t) => t.sourceEmailId == widget.email.id,
     );

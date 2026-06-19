@@ -14,8 +14,8 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // Verify that the splash screen title is present.
-    expect(find.text('AI Personal Trainer'), findsOneWidget);
-    expect(find.text('Your Private AI Assistant'), findsOneWidget);
+    // Verify that the sign in screen title and button are present.
+    expect(find.text('Welcome Back!'), findsOneWidget);
+    expect(find.text('Sign In'), findsOneWidget);
   });
 }

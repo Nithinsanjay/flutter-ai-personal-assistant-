@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../state/app_state.dart';
+import '../models/calender_event.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -35,7 +37,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateProvider.of(context);
+    // final state = AppStateProvider.of(context);
+    
+    final state = context.read<AppState>();
     final events = state.calendarEvents;
 
     return Scaffold(
