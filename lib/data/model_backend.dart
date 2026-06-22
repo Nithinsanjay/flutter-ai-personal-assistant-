@@ -2,6 +2,7 @@
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
+import 'package:dio/dio.dart';
 
 class ModelBackend {
   /// Check if a model file is already downloaded
@@ -14,29 +15,51 @@ class ModelBackend {
 
   /// Return a File reference for a model
   Future<io.File> getModelFile(String fileName) async {
-    if (kIsWeb) throw UnsupportedError("File system access is not supported on Web");
+    if (kIsWeb)
+      throw UnsupportedError("File system access is not supported on Web");
     final dir = await getApplicationDocumentsDirectory();
     return io.File("${dir.path}/$fileName");
   }
 
-  /// Simulate downloading a model (replace with Dio logic later)
   Future<void> downloadModel(
     String name,
     String fileName,
     String? url, {
     required void Function(double progress) onProgress,
   }) async {
-    // Simulated download progress (replace with Dio later)
-    for (int i = 1; i <= 10; i++) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      onProgress(i / 10.0);
+    if (url == null || url.isEmpty) {
+      throw Exception("Download URL is empty");
     }
 
-    if (kIsWeb) return;
+    print("Starting download");
+    print("URL = $url");
 
     final dir = await getApplicationDocumentsDirectory();
-    final file = io.File("${dir.path}/$fileName");
-    await file.writeAsString("dummy model data for $name");
+
+    final savePath = "${dir.path}/$fileName";
+
+    print("Saving to:");
+    print(savePath);
+
+    final dio = Dio();
+
+    await dio.download(
+      url,
+      savePath,
+      onReceiveProgress: (received, total) {
+        if (total > 0) {
+          final progress = received / total;
+
+          print(
+            "Downloaded $received / $total (${(progress * 100).toStringAsFixed(1)}%)",
+          );
+
+          onProgress(progress);
+        }
+      },
+    );
+
+    print("Download completed");
   }
 
   /// Initialize model (stubbed)

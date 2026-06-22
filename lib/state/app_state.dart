@@ -7,7 +7,7 @@ import '../models/coach_message.dart';
 import '../data/model_backend.dart';
 import '../models/email.dart';
 import '../models/task_item.dart';
-import '../models/model.info.dart';
+import '../models/model_info.dart';
 
 class AppState extends ChangeNotifier {
   static final AppState _instance = AppState._internal();
@@ -221,244 +221,28 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  // void _loadInitialData() {
-  //   // 1. Initial Emails
-  //   _emails = [
-  //     EmailItem(
-  //       id: "gmail_1",
-  //       sender: "Paul Smith",
-  //       subject: "Proposal Approval Needed",
-  //       snippet: "Hi Pandi, please review the proposal doc and approve...",
-  //       time: "08:15 AM",
-  //       priority: "High",
-  //       source: "Gmail",
-  //       content:
-  //           "Paul is requesting you to review the proposal document and provide approval by EOD. This is critical for the client sign-off.",
-  //       suggestedActions: [
-  //         "Review the proposal document",
-  //         "Provide feedback",
-  //         "Approve and send confirmation",
-  //       ],
-  //       aiSummary:
-  //           "Paul is requesting you to review the proposal document and provide approval by EOD.",
-  //     ),
-  //     EmailItem(
-  //       id: "gmail_2",
-  //       sender: "HR - Internship",
-  //       subject: "Intern Onboarding Plan",
-  //       snippet: "Please find the onboarding plan for the new interns...",
-  //       time: "08:33 AM",
-  //       priority: "Medium",
-  //       source: "Gmail",
-  //       content:
-  //           "Please find the onboarding plan for the new interns starting next Monday. We need your confirmation on the schedule.",
-  //       suggestedActions: [
-  //         "Confirm onboarding schedule",
-  //         "Assign mentors for interns",
-  //       ],
-  //       aiSummary:
-  //           "The HR department needs confirmation on the onboarding schedule for the new interns starting next week.",
-  //     ),
-  //     EmailItem(
-  //       id: "gmail_3",
-  //       sender: "Newsletter",
-  //       subject: "Weekly Tech News",
-  //       snippet: "Your weekly dose of technology and innovation...",
-  //       time: "Yesterday",
-  //       priority: "Low",
-  //       source: "Gmail",
-  //       content:
-  //           "This week's roundup on local AI frameworks, on-device model training, and trends in flutter development.",
-  //       suggestedActions: ["Read article about on-device AI"],
-  //       aiSummary:
-  //           "Weekly technology newsletter with topics on local AI and Flutter development.",
-  //     ),
-  //     // M365 Emails (Available when connected)
-  //     EmailItem(
-  //       id: "m365_1",
-  //       sender: "Naxent Team",
-  //       subject: "Deployment Completed",
-  //       snippet: "The production deployment is completed successfully...",
-  //       time: "09:45 AM",
-  //       priority: "High",
-  //       source: "M365",
-  //       content:
-  //           "The production deployment has been completed successfully. All automated sanity checks are passing.",
-  //       suggestedActions: ["Review deployment logs", "Notify stakeholders"],
-  //       aiSummary:
-  //           "The Naxent production deployment has been completed successfully and passed sanity checks.",
-  //     ),
-  //     EmailItem(
-  //       id: "m365_2",
-  //       sender: "Secure Pickup",
-  //       subject: "Flow Review Request",
-  //       snippet: "Requesting review and feedback on the new flow...",
-  //       time: "07:50 AM",
-  //       priority: "Medium",
-  //       source: "M365",
-  //       content:
-  //           "We have finalized the secure checkout pickup flow. Please review and provide your sign-off.",
-  //       suggestedActions: ["Review checkout flow document", "Provide feedback"],
-  //       aiSummary:
-  //           "Secure Pickup team is requesting a review and feedback on the new checkout pickup flow.",
-  //     ),
-  //   ];
-
-  //   // 2. Initial Tasks
-  //   _tasks = [
-  //     TaskItem(
-  //       id: "task_1",
-  //       title: "Reply to Paul about the proposal",
-  //       time: "10:00 AM",
-  //       priority: "High",
-  //       status: "Today",
-  //       sourceEmailId: "gmail_1",
-  //     ),
-  //     TaskItem(
-  //       id: "task_2",
-  //       title: "Review GTM Production Setup",
-  //       time: "11:30 AM",
-  //       priority: "High",
-  //       status: "Today",
-  //     ),
-  //     TaskItem(
-  //       id: "task_3",
-  //       title: "Internship Onboarding Review",
-  //       time: "02:00 PM",
-  //       priority: "Medium",
-  //       status: "Today",
-  //       sourceEmailId: "gmail_2",
-  //     ),
-  //     TaskItem(
-  //       id: "task_4",
-  //       title: "Gold EMI Flow Validation",
-  //       time: "03:30 PM",
-  //       priority: "Medium",
-  //       status: "Today",
-  //     ),
-  //     TaskItem(
-  //       id: "task_5",
-  //       title: "Secure Pickup Review",
-  //       time: "01:00 PM",
-  //       priority: "Medium",
-  //       status: "InProgress",
-  //       sourceEmailId: "m365_2",
-  //     ),
-  //     TaskItem(
-  //       id: "task_6",
-  //       title: "Smoke Test Validation",
-  //       time: "04:30 PM",
-  //       priority: "Medium",
-  //       status: "InProgress",
-  //     ),
-  //     TaskItem(
-  //       id: "task_7",
-  //       title: "Deployment Smoke Test",
-  //       time: "Yesterday",
-  //       priority: "Medium",
-  //       status: "Completed",
-  //       sourceEmailId: "m365_1",
-  //     ),
-  //   ];
-
-  //   // 3. Initial Calendar Events
-  //   _calendarEvents = [
-  //     CalendarEvent(
-  //       id: "cal_1",
-  //       title: "Team Standup",
-  //       startTime: "09:00",
-  //       endTime: "09:30",
-  //       type: "Meeting",
-  //       source: "Gmail",
-  //     ),
-  //     CalendarEvent(
-  //       id: "cal_2",
-  //       title: "Reply to Paul",
-  //       startTime: "10:00",
-  //       endTime: "10:30",
-  //       type: "Task",
-  //       source: "Gmail",
-  //     ),
-  //     CalendarEvent(
-  //       id: "cal_3",
-  //       title: "Review GTM Setup",
-  //       startTime: "11:30",
-  //       endTime: "12:30",
-  //       type: "Meeting",
-  //       source: "Gmail",
-  //     ),
-  //     CalendarEvent(
-  //       id: "cal_4",
-  //       title: "Lunch Break",
-  //       startTime: "13:00",
-  //       endTime: "13:30",
-  //       type: "Personal",
-  //       source: "Local",
-  //     ),
-  //     CalendarEvent(
-  //       id: "cal_5",
-  //       title: "Focus Block",
-  //       startTime: "14:00",
-  //       endTime: "16:00",
-  //       type: "Focus",
-  //       source: "Local",
-  //     ),
-  //     CalendarEvent(
-  //       id: "cal_6",
-  //       title: "Internship Onboarding",
-  //       startTime: "16:00",
-  //       endTime: "17:00",
-  //       type: "Meeting",
-  //       source: "Gmail",
-  //     ),
-  //     // M365 Synced events (Available when M365 connected)
-  //     CalendarEvent(
-  //       id: "cal_7",
-  //       title: "Naxent Post-Mortem",
-  //       startTime: "11:00",
-  //       endTime: "11:30",
-  //       type: "Meeting",
-  //       source: "M365",
-  //     ),
-  //     CalendarEvent(
-  //       id: "cal_8",
-  //       title: "Secure Pickup Review",
-  //       startTime: "13:30",
-  //       endTime: "14:00",
-  //       type: "Meeting",
-  //       source: "M365",
-  //     ),
-  //   ];
-
-  //   // 4. AI Coach messages
-  //   _coachMessages = [
-  //     CoachMessage(
-  //       text:
-  //           "Great job, Pandi! You have completed 1 of 7 tasks today. Your productivity score is 60%.",
-  //       isUser: false,
-  //       timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-  //     ),
-  //     CoachMessage(
-  //       text:
-  //           "Recommended Next Task:\nReview GTM Production Setup. This is a high priority task due in 45 mins.",
-  //       isUser: false,
-  //       timestamp: DateTime.now().subtract(const Duration(minutes: 4)),
-  //     ),
-  //   ];
-  // }
-  // --- Model lifecycle actions ---
-
   Future<void> startDownload(ModelInfo model) async {
+    print("START DOWNLOAD");
+    print("URL: ${model.downloadUrl}");
+    print("FILE: ${model.modelFile}");
+
     model.status = 'downloading';
     model.progress = 0.0;
     model.errorMessage = null;
     notifyListeners();
 
     try {
+      print("MODEL NAME = ${model.name}");
+      print("MODEL ID = ${model.modelId}");
+      print("COMMIT HASH = ${model.commitHash}");
+      print("MODEL FILE = ${model.modelFile}");
+      print("DOWNLOAD URL = ${model.downloadUrl}");
+      print("BUILD URL = ${model.buildDownloadUrl()}");
+
       await _modelBackend.downloadModel(
         model.name,
         model.modelFile,
-        model.downloadUrl,
+        model.buildDownloadUrl(),
         onProgress: (progress) {
           model.progress = progress.clamp(0.0, 1.0).toDouble();
           notifyListeners();
@@ -466,6 +250,9 @@ class AppState extends ChangeNotifier {
       );
 
       final file = await _modelBackend.getModelFile(model.modelFile);
+      print("FILE PATH = ${file.path}");
+      print("FILE EXISTS = ${await file.exists()}");
+      print("FILE SIZE = ${await file.length()}");
       model.status = 'downloaded';
       model.progress = 0.0;
       model.localPath = file.path;
