@@ -4,7 +4,16 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 
+class DownloadCancelledException implements Exception {
+  final String message;
+  DownloadCancelledException(this.message);
+  @override
+  String toString() => message;
+}
+
 class ModelBackend {
+  final Map<String, CancelToken> _downloadTokens = {};
+
   /// Check if a model file is already downloaded
   Future<bool> isDownloaded(String fileName) async {
     if (kIsWeb) return false;
@@ -35,31 +44,65 @@ class ModelBackend {
     print("URL = $url");
 
     final dir = await getApplicationDocumentsDirectory();
-
     final savePath = "${dir.path}/$fileName";
 
     print("Saving to:");
     print(savePath);
 
     final dio = Dio();
+    final cancelToken = CancelToken();
+    _downloadTokens[fileName] = cancelToken;
 
-    await dio.download(
-      url,
-      savePath,
-      onReceiveProgress: (received, total) {
-        if (total > 0) {
-          final progress = received / total;
+    try {
+      await dio.download(
+        url,
+        savePath,
+        cancelToken: cancelToken,
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            final progress = received / total;
 
-          print(
-            "Downloaded $received / $total (${(progress * 100).toStringAsFixed(1)}%)",
-          );
+            print(
+              "Downloaded $received / $total (${(progress * 100).toStringAsFixed(1)}%)",
+            );
 
-          onProgress(progress);
-        }
-      },
-    );
+            onProgress(progress);
+          }
+        },
+      );
+      print("Download completed");
+    } on DioException catch (e) {
+      // Clean up partial file
+      final file = io.File(savePath);
+      if (await file.exists()) {
+        try {
+          await file.delete();
+        } catch (_) {}
+      }
 
-    print("Download completed");
+      if (e.type == DioExceptionType.cancel) {
+        throw DownloadCancelledException("Download cancelled by user");
+      }
+      rethrow;
+    } catch (e) {
+      // Clean up partial file
+      final file = io.File(savePath);
+      if (await file.exists()) {
+        try {
+          await file.delete();
+        } catch (_) {}
+      }
+      rethrow;
+    } finally {
+      _downloadTokens.remove(fileName);
+    }
+  }
+
+  void cancelDownload(String fileName) {
+    final token = _downloadTokens[fileName];
+    if (token != null) {
+      token.cancel("User cancelled download");
+    }
   }
 
   /// Initialize model (stubbed)

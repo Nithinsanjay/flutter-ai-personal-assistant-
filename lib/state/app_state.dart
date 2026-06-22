@@ -260,9 +260,21 @@ class AppState extends ChangeNotifier {
     } catch (error) {
       model.status = 'download';
       model.progress = 0.0;
-      model.errorMessage = error.toString();
+      if (error is DownloadCancelledException) {
+        model.errorMessage = null;
+      } else {
+        model.errorMessage = error.toString();
+      }
       notifyListeners();
     }
+  }
+
+  void cancelDownload(ModelInfo model) {
+    _modelBackend.cancelDownload(model.modelFile);
+    model.status = 'download';
+    model.progress = 0.0;
+    model.errorMessage = null;
+    notifyListeners();
   }
 
   Future<void> connectModel(ModelInfo model) async {

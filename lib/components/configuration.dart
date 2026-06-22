@@ -143,18 +143,41 @@ class ConfigurationSection extends StatelessWidget {
                 ),
               ),
             ] else if (model.status == 'downloading') ...[
-              Stack(
-                alignment: Alignment.centerRight,
+              Row(
                 children: [
-                  LinearProgressIndicator(value: model.progress),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Text(
-                      "${(model.progress * 100).toStringAsFixed(0)}%",
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: model.progress,
+                            backgroundColor: const Color(0xFFE2E8F0),
+                            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4F46E5)),
+                            minHeight: 8,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          "Downloading... ${(model.progress * 100).toStringAsFixed(0)}%",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    onPressed: () => appState.cancelDownload(model),
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    tooltip: 'Cancel Download',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.red.shade50,
+                      padding: const EdgeInsets.all(8),
                     ),
                   ),
                 ],
