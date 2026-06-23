@@ -1,10 +1,14 @@
 import 'package:ai_personal_asst/screens/auth_screens.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gemma/flutter_gemma.dart';
+import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:provider/provider.dart';
 import 'state/app_state.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FlutterGemma.initialize(inferenceEngines: [LiteRtLmEngine()]);
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => AppState()..loadModels(),

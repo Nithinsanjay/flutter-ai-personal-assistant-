@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../state/app_state.dart';
 import 'dashboard_screen.dart';
 import 'task_screen.dart';
 import 'email_screens.dart';
@@ -13,8 +15,6 @@ class NavigationContainer extends StatefulWidget {
 }
 
 class _NavigationContainerState extends State<NavigationContainer> {
-  int _currentIndex = 0;
-
   final List<Widget> _screens = [
     const DashboardScreen(),
     const TaskScreen(),
@@ -25,9 +25,11 @@ class _NavigationContainerState extends State<NavigationContainer> {
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppState>();
+
     return Scaffold(
       body: IndexedStack(
-        index: _currentIndex,
+        index: appState.currentTabIndex,
         children: _screens,
       ),
       bottomNavigationBar: Container(
@@ -40,11 +42,9 @@ class _NavigationContainerState extends State<NavigationContainer> {
           ),
         ),
         child: BottomNavigationBar(
-          currentIndex: _currentIndex,
+          currentIndex: appState.currentTabIndex,
           onTap: (index) {
-            setState(() {
-              _currentIndex = index;
-            });
+            appState.setTabIndex(index);
           },
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,

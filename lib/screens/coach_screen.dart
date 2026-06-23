@@ -1,3 +1,4 @@
+import 'package:ai_personal_asst/ai/chat_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/app_state.dart';
@@ -21,23 +22,51 @@ class _CoachScreenState extends State<CoachScreen> {
     "Reschedule tasks",
   ];
 
-  void _sendMessage(AppState state, String text) {
+  // void _sendMessage(AppState state, String text) {
+  //   if (text.trim().isEmpty) return;
+
+  //   state.addCoachMessage(text.trim(), true);
+  //   _messageController.clear();
+
+  //   Future.delayed(const Duration(milliseconds: 100), () {
+  //     if (_scrollController.hasClients) {
+  //       _scrollController.animateTo(
+  //         _scrollController.position.maxScrollExtent,
+  //         duration: const Duration(milliseconds: 300),
+  //         curve: Curves.easeOut,
+  //       );
+  //     }
+  //   });
+
+  //   Future.delayed(const Duration(milliseconds: 950), () {
+  //     if (_scrollController.hasClients) {
+  //       _scrollController.animateTo(
+  //         _scrollController.position.maxScrollExtent,
+  //         duration: const Duration(milliseconds: 300),
+  //         curve: Curves.easeOut,
+  //       );
+  //     }
+  //   });
+  // }
+
+  Future<void> _sendMessage(AppState state, String text) async {
     if (text.trim().isEmpty) return;
 
-    state.addCoachMessage(text.trim(), true);
+    final prompt = text.trim();
+
+    state.addCoachMessage(prompt, true);
+
     _messageController.clear();
 
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
+    try {
+      final response = await ChatService.sendMessage(prompt);
 
-    Future.delayed(const Duration(milliseconds: 950), () {
+      state.addCoachMessage(response, false);
+    } catch (e) {
+      state.addCoachMessage('Error: $e', false);
+    }
+
+    Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
@@ -51,7 +80,9 @@ class _CoachScreenState extends State<CoachScreen> {
   @override
   Widget build(BuildContext context) {
     // final state = AppStateProvider.of(context);
-    final state = context.read<AppState>();
+    final state = context.watch<AppState>();
+    final connectedModel = state.connectedModel;
+    final isModelConnected = connectedModel != null;
 
     final completedCount = state.tasks
         .where((t) => t.status == 'Completed')
@@ -76,17 +107,43 @@ class _CoachScreenState extends State<CoachScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'AI Chat',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'AI Chat',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            if (isModelConnected) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _PulsingDot(),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Active: ${connectedModel.name}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.teal,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined, color: Color(0xFF0F172A)),
-            onPressed: () {},
+            onPressed: () {
+              state.setTabIndex(4); // Switch to Settings tab
+            },
           ),
         ],
       ),
@@ -119,100 +176,198 @@ class _CoachScreenState extends State<CoachScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: state.coachMessages.length,
-                    itemBuilder: (context, index) {
-                      final msg = state.coachMessages[index];
-                      return _buildChatBubble(msg);
-                    },
-                  ),
+                  if (isModelConnected) ...[
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: state.coachMessages.length,
+                      itemBuilder: (context, index) {
+                        final msg = state.coachMessages[index];
+                        return _buildChatBubble(msg);
+                      },
+                    ),
+                  ] else ...[
+                    _buildOfflineCard(context, state),
+                  ],
                 ],
               ),
             ),
           ),
 
-          Container(
-            height: 38,
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _suggestedPrompts.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ActionChip(
-                    label: Text(_suggestedPrompts[index]),
-                    labelStyle: const TextStyle(
-                      color: Color(0xFF4F46E5),
-                      fontSize: 11,
+          if (isModelConnected) ...[
+            Container(
+              height: 38,
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _suggestedPrompts.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ActionChip(
+                      label: Text(_suggestedPrompts[index]),
+                      labelStyle: const TextStyle(
+                        color: Color(0xFF4F46E5),
+                        fontSize: 11,
+                      ),
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      onPressed: () async {
+                        await _sendMessage(state, _suggestedPrompts[index]);
+                      },
                     ),
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    onPressed: () =>
-                        _sendMessage(state, _suggestedPrompts[index]),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          Container(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              top: 4,
-            ),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: Colors.grey[200]!, width: 0.5),
+                  );
+                },
               ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    style: const TextStyle(
-                      color: Color(0xFF0F172A),
-                      fontSize: 14,
-                    ),
-                    onSubmitted: (val) => _sendMessage(state, val),
-                    decoration: InputDecoration(
-                      hintText: 'Ask your AI Chat...',
-                      hintStyle: const TextStyle(color: Color(0xFF64748B)),
-                      filled: true,
-                      fillColor: const Color(0xFFF1F5F9),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
+
+            Container(
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                top: 4,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.grey[200]!, width: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      style: const TextStyle(
+                        color: Color(0xFF0F172A),
+                        fontSize: 14,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.mic_none_outlined,
-                        color: Color(0xFF64748B),
+                      // onSubmitted: (val) => _sendMessage(state, val),
+                      onSubmitted: (val) async {
+                        await _sendMessage(state, val);
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Ask your AI Chat...',
+                        hintStyle: const TextStyle(color: Color(0xFF64748B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.mic_none_outlined,
+                          color: Color(0xFF64748B),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                CircleAvatar(
-                  backgroundColor: const Color(0xFF4F46E5),
-                  radius: 20,
-                  child: IconButton(
-                    icon: const Icon(Icons.send, color: Colors.white, size: 18),
-                    onPressed: () =>
-                        _sendMessage(state, _messageController.text),
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    backgroundColor: const Color(0xFF4F46E5),
+                    radius: 20,
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.send,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      // onPressed: () =>
+                      //     _sendMessage(state, _messageController.text),
+                      onPressed: () async {
+                        await _sendMessage(state, _messageController.text);
+                      },
+                    ),
                   ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfflineCard(BuildContext context, AppState state) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.psychology_alt_outlined,
+              color: Color(0xFF7C3AED),
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Local AI Coach Offline',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Connect an on-device language model to enable private on-device coaching. All data and processing remain strictly on your device.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 42,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                state.setTabIndex(4); // Switch to Settings tab
+              },
+              icon: const Icon(Icons.link, color: Colors.white, size: 18),
+              label: const Text(
+                'Connect a Model',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4F46E5),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
             ),
           ),
         ],
@@ -444,6 +599,57 @@ class _CoachScreenState extends State<CoachScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot();
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.teal,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.teal.withValues(alpha: 0.5),
+                blurRadius: 4 + _controller.value * 6,
+                spreadRadius: _controller.value * 3,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

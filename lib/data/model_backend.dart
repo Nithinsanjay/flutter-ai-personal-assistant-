@@ -1,6 +1,7 @@
 // lib/data/model_backend.dart
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_gemma/flutter_gemma.dart' hide CancelToken;
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
 
@@ -106,16 +107,46 @@ class ModelBackend {
   }
 
   /// Initialize model (stubbed)
+  // Future<String> initializeModel(String name, String fileName) async {
+  //   await GemmaService.instance.initialize();
+  //   if (kIsWeb) {
+  //     return "web_model_path";
+  //   }
+  //   final file = await getModelFile(fileName);
+  //   if (!await file.exists()) {
+  //     throw Exception("Model file not found: ${file.path}");
+  //   }
+
+  //   // TODO: add actual initialization logic (e.g., load runtime/interpreter)
+  //   return file.path;
+  // }
+
   Future<String> initializeModel(String name, String fileName) async {
-    if (kIsWeb) {
-      return "web_model_path";
-    }
     final file = await getModelFile(fileName);
+
     if (!await file.exists()) {
-      throw Exception("Model file not found: ${file.path}");
+      throw Exception('Model file not found');
     }
 
-    // TODO: add actual initialization logic (e.g., load runtime/interpreter)
+    final ModelType modelType;
+    final String lowerName = name.toLowerCase();
+    if (lowerName.contains('gemma-4') || lowerName.contains('gemma4')) {
+      modelType = ModelType.gemma4;
+    } else if (lowerName.contains('qwen3')) {
+      modelType = ModelType.qwen3;
+    } else if (lowerName.contains('qwen')) {
+      modelType = ModelType.qwen;
+    } else if (lowerName.contains('gemma')) {
+      modelType = ModelType.gemmaIt;
+    } else {
+      modelType = ModelType.general;
+    }
+
+    await FlutterGemma.installModel(
+      modelType: modelType,
+      fileType: ModelFileType.litertlm,
+    ).fromFile(file.path).install();
+
     return file.path;
   }
 

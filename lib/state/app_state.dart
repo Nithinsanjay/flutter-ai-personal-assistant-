@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert'; // for json.decode()
+import 'package:ai_personal_asst/ai/gemma_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // for rootBundle
 import '../models/calender_event.dart';
@@ -41,6 +42,25 @@ class AppState extends ChangeNotifier {
   void updateModelStatus(ModelInfo model, String newStatus) {
     model.status = newStatus;
     notifyListeners();
+  }
+
+  // Active navigation tab
+  int _currentTabIndex = 0;
+  int get currentTabIndex => _currentTabIndex;
+
+  void setTabIndex(int index) {
+    _currentTabIndex = index;
+    notifyListeners();
+  }
+
+  // Connected model getter
+  ModelInfo? get connectedModel {
+    for (final model in models) {
+      if (model.status == 'connected') {
+        return model;
+      }
+    }
+    return null;
   }
 
   // Connection states
@@ -176,22 +196,26 @@ class AppState extends ChangeNotifier {
     notifyListeners();
 
     if (isUser) {
-      // Simulate AI response
-      Future.delayed(const Duration(milliseconds: 800), () {
-        String response = _generateAIResponse(text);
-        _coachMessages.add(
-          CoachMessage(
-            text: response,
-            isUser: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-        notifyListeners();
-      });
+      if (connectedModel == null) {
+        Future.delayed(const Duration(milliseconds: 800), () async {
+          String response = _generateAIResponse(text);
+
+          _coachMessages.add(
+            CoachMessage(
+              text: response,
+              isUser: false,
+              timestamp: DateTime.now(),
+            ),
+          );
+          notifyListeners();
+        });
+      }
     }
   }
 
   String _generateAIResponse(String prompt) {
+    final modelName = connectedModel?.name ?? "On-Device AI";
+    String responseBody;
     final cleanPrompt = prompt.toLowerCase();
     if (cleanPrompt.contains('what should i do') ||
         cleanPrompt.contains('priorities')) {
@@ -199,27 +223,41 @@ class AppState extends ChangeNotifier {
           .where((t) => t.priority == 'High' && t.status != 'Completed')
           .toList();
       if (highTasks.isNotEmpty) {
-        return "You have ${highTasks.length} high priority tasks remaining. I suggest starting with '${highTasks.first.title}' scheduled at ${highTasks.first.time}.";
+        responseBody =
+            "You have ${highTasks.length} high priority tasks remaining. I suggest starting with '${highTasks.first.title}' scheduled at ${highTasks.first.time}.";
+      } else {
+        responseBody =
+            "All high priority tasks are completed! You can review your medium priority tasks or check the calendar for next meetings.";
       }
-      return "All high priority tasks are completed! You can review your medium priority tasks or check the calendar for next meetings.";
     } else if (cleanPrompt.contains('email')) {
       final unreadCount = emails.length;
-      return "You have $unreadCount active emails synced from your connections. Gmail shows ${_emails.where((e) => e.source == 'Gmail').length} items, and Microsoft 365 shows ${_emails.where((e) => e.source == 'M365').length} items.";
+      responseBody =
+          "You have $unreadCount active emails synced from your connections. Gmail shows ${_emails.where((e) => e.source == 'Gmail').length} items, and Microsoft 365 shows ${_emails.where((e) => e.source == 'M365').length} items.";
     } else if (cleanPrompt.contains('task')) {
       final total = _tasks.length;
       final completed = _tasks.where((t) => t.status == 'Completed').length;
-      return "Currently, you've completed $completed out of $total tasks today. Keep going!";
+      responseBody =
+          "Currently, you've completed $completed out of $total tasks today. Keep going!";
     } else if (cleanPrompt.contains('meeting') ||
         cleanPrompt.contains('calendar')) {
       final events = calendarEvents;
       if (events.isNotEmpty) {
-        return "Your next event is '${events.first.title}' starting shortly. Check your Unified Calendar for the full list.";
+        responseBody =
+            "Your next event is '${events.first.title}' starting shortly. Check your Unified Calendar for the full list.";
+      } else {
+        responseBody =
+            "No calendar events scheduled for today. You have a clear slot!";
       }
-      return "No calendar events scheduled for today. You have a clear slot!";
     } else {
-      return "I've analyzed your synced emails and calendar. Let me know if you want me to summarize emails, list pending tasks, or help reschedule meetings.";
+      responseBody =
+          "I've analyzed your synced emails and calendar. Let me know if you want me to summarize emails, list pending tasks, or help reschedule meetings.";
     }
+    return "[$modelName]: $responseBody";
   }
+
+  // Future<String> generateCoachResponse(String prompt) async {
+  //   return await ChatService.sendMessage(prompt);
+  // }
 
   Future<void> startDownload(ModelInfo model) async {
     print("START DOWNLOAD");
@@ -280,24 +318,56 @@ class AppState extends ChangeNotifier {
   Future<void> connectModel(ModelInfo model) async {
     model.status = 'connecting';
     model.errorMessage = null;
+
     notifyListeners();
 
+    // Verify if file actually exists on device
+    final exists = await _modelBackend.isDownloaded(model.modelFile);
+    if (!exists) {
+      model.status = 'download';
+      model.localPath = null;
+      model.errorMessage =
+          "Model file not found at local path. Please download it again.";
+      notifyListeners();
+      return;
+    }
+
     try {
+      await GemmaService.instance.dispose();
+
       model.localPath = await _modelBackend.initializeModel(
         model.name,
         model.modelFile,
       );
+      print("Model path = ${model.localPath}");
+      print("Model file = ${model.modelFile}");
+      await GemmaService.instance.initialize();
+
+      // Disconnect other models first
+      bool hadConnected = false;
+      for (final m in models) {
+        if (m != model && m.status == 'connected') {
+          m.status = 'downloaded';
+          hadConnected = true;
+        }
+      }
+      if (hadConnected) {
+        await _modelBackend.disconnectModel();
+      }
+
       model.status = 'connected';
       notifyListeners();
     } catch (error) {
       model.status = 'downloaded';
       model.errorMessage = error.toString();
+      print("connection Error = ${error.toString()}");
       notifyListeners();
     }
   }
 
   Future<void> disconnectModel(ModelInfo model) async {
     await _modelBackend.disconnectModel();
+    await GemmaService.instance.dispose();
     model.status = 'downloaded';
     model.errorMessage = null;
     notifyListeners();
@@ -317,17 +387,3 @@ class AppState extends ChangeNotifier {
     }
   }
 }
-
-// class AppStateProvider extends InheritedNotifier<AppState> {
-//   const AppStateProvider({
-//     super.key,
-//     required super.notifier,
-//     required super.child,
-//   });
-
-//   static AppState of(BuildContext context) {
-//     return context
-//         .dependOnInheritedWidgetOfExactType<AppStateProvider>()!
-//         .notifier!;
-//   }
-// }
