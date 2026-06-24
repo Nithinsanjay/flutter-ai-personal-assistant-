@@ -1,4 +1,3 @@
-// lib/data/model_backend.dart
 import 'dart:io' as io;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_gemma/flutter_gemma.dart' hide CancelToken;
@@ -105,21 +104,6 @@ class ModelBackend {
       token.cancel("User cancelled download");
     }
   }
-
-  /// Initialize model (stubbed)
-  // Future<String> initializeModel(String name, String fileName) async {
-  //   await GemmaService.instance.initialize();
-  //   if (kIsWeb) {
-  //     return "web_model_path";
-  //   }
-  //   final file = await getModelFile(fileName);
-  //   if (!await file.exists()) {
-  //     throw Exception("Model file not found: ${file.path}");
-  //   }
-
-  //   // TODO: add actual initialization logic (e.g., load runtime/interpreter)
-  //   return file.path;
-  // }
 
   Future<String> initializeModel(String name, String fileName) async {
     final file = await getModelFile(fileName);

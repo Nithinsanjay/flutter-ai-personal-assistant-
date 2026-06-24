@@ -213,6 +213,20 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  void updateLastCoachMessage(String text) {
+    if (_coachMessages.isEmpty) return;
+
+    final last = _coachMessages.last;
+
+    _coachMessages[_coachMessages.length - 1] = CoachMessage(
+      text: text,
+      isUser: last.isUser,
+      timestamp: last.timestamp,
+    );
+
+    notifyListeners();
+  }
+
   String _generateAIResponse(String prompt) {
     final modelName = connectedModel?.name ?? "On-Device AI";
     String responseBody;

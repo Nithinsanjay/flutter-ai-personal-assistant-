@@ -34,6 +34,20 @@ class GemmaService {
     }
   }
 
+  Stream<String> sendMessageStream(String prompt) async* {
+    if (_chat == null) {
+      throw Exception('Model not initialized');
+    }
+
+    await _chat!.addQuery(Message.text(text: prompt, isUser: true));
+
+    await for (final response in _chat!.generateChatResponseAsync()) {
+      if (response is TextResponse) {
+        yield response.token;
+      }
+    }
+  }
+
   Future<void> dispose() async {
     if (_chat != null) {
       await _chat!.close();

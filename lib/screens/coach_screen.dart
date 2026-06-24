@@ -22,33 +22,6 @@ class _CoachScreenState extends State<CoachScreen> {
     "Reschedule tasks",
   ];
 
-  // void _sendMessage(AppState state, String text) {
-  //   if (text.trim().isEmpty) return;
-
-  //   state.addCoachMessage(text.trim(), true);
-  //   _messageController.clear();
-
-  //   Future.delayed(const Duration(milliseconds: 100), () {
-  //     if (_scrollController.hasClients) {
-  //       _scrollController.animateTo(
-  //         _scrollController.position.maxScrollExtent,
-  //         duration: const Duration(milliseconds: 300),
-  //         curve: Curves.easeOut,
-  //       );
-  //     }
-  //   });
-
-  //   Future.delayed(const Duration(milliseconds: 950), () {
-  //     if (_scrollController.hasClients) {
-  //       _scrollController.animateTo(
-  //         _scrollController.position.maxScrollExtent,
-  //         duration: const Duration(milliseconds: 300),
-  //         curve: Curves.easeOut,
-  //       );
-  //     }
-  //   });
-  // }
-
   Future<void> _sendMessage(AppState state, String text) async {
     if (text.trim().isEmpty) return;
 
@@ -58,10 +31,32 @@ class _CoachScreenState extends State<CoachScreen> {
 
     _messageController.clear();
 
-    try {
-      final response = await ChatService.sendMessage(prompt);
+    // try {
+    //   final response = await ChatService.sendMessage(prompt);
 
-      state.addCoachMessage(response, false);
+    //   state.addCoachMessage(response, false);
+    // } catch (e) {
+    //   state.addCoachMessage('Error: $e', false);
+    // }
+
+    try {
+      // Show thinking message
+      state.addCoachMessage("🤔 Thinking...", false);
+
+      String streamedResponse = "";
+      bool firstChunk = true;
+
+      await for (final chunk in ChatService.sendMessageStream(prompt)) {
+        if (firstChunk) {
+          streamedResponse = "";
+          firstChunk = false;
+        }
+
+        streamedResponse += chunk;
+
+        // Update assistant message
+        state.updateLastCoachMessage(streamedResponse);
+      }
     } catch (e) {
       state.addCoachMessage('Error: $e', false);
     }
@@ -79,7 +74,6 @@ class _CoachScreenState extends State<CoachScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // final state = AppStateProvider.of(context);
     final state = context.watch<AppState>();
     final connectedModel = state.connectedModel;
     final isModelConnected = connectedModel != null;
@@ -244,7 +238,6 @@ class _CoachScreenState extends State<CoachScreen> {
                         color: Color(0xFF0F172A),
                         fontSize: 14,
                       ),
-                      // onSubmitted: (val) => _sendMessage(state, val),
                       onSubmitted: (val) async {
                         await _sendMessage(state, val);
                       },
@@ -278,8 +271,6 @@ class _CoachScreenState extends State<CoachScreen> {
                         color: Colors.white,
                         size: 18,
                       ),
-                      // onPressed: () =>
-                      //     _sendMessage(state, _messageController.text),
                       onPressed: () async {
                         await _sendMessage(state, _messageController.text);
                       },
