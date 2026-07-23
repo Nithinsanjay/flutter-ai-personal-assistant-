@@ -5,6 +5,7 @@ class CalendarEvent {
   final String endTime;
   final String type; // 'Meeting', 'Task', 'Focus', 'Personal'
   final String source; // 'Gmail', 'M365', 'Local'
+  final String date; // 'yyyy-MM-dd'
 
   CalendarEvent({
     required this.id,
@@ -13,5 +14,6 @@ class CalendarEvent {
     required this.endTime,
     required this.type,
     required this.source,
+    required this.date,
   });
 }

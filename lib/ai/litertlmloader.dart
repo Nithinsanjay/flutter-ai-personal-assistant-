@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'model.dart';
 
 class LiteRTModelLoader implements ModelLoader {
@@ -10,7 +11,7 @@ class LiteRTModelLoader implements ModelLoader {
     if (await file.exists()) {
       return file;
     }
-    print(
+    debugPrint(
       "Flutter Error [LiteRTModelLoader]: Target file path missing at $modelPath",
     );
     return null;
@@ -20,7 +21,7 @@ class LiteRTModelLoader implements ModelLoader {
   bool isModelValid(String modelPath) {
     final extension = modelPath.split('.').last.toLowerCase();
     if (extension != extensionLitertLm) {
-      print(
+      debugPrint(
         "Flutter Warning [LiteRTModelLoader]: Suffix '.$extension' does not match '.litertlm'",
       );
       return false;

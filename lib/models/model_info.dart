@@ -1,5 +1,3 @@
-// lib/models/model_info.dart
-
 class ModelInfo {
   final String name;
   final double sizeGB;

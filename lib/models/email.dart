@@ -9,6 +9,7 @@ class EmailItem {
   final String content;
   final List<String> suggestedActions;
   final String aiSummary;
+  final String date; // 'yyyy-MM-dd'
 
   EmailItem({
     required this.id,
@@ -21,5 +22,6 @@ class EmailItem {
     required this.content,
     required this.suggestedActions,
     required this.aiSummary,
+    required this.date,
   });
 }

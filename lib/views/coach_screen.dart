@@ -1,0 +1,677 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/connectivity_viewmodel.dart';
+import '../viewmodels/model_viewmodel.dart';
+import '../viewmodels/workflow_viewmodel.dart';
+import '../viewmodels/coach_viewmodel.dart';
+import '../models/coach_message.dart';
+
+class CoachScreen extends StatefulWidget {
+  const CoachScreen({super.key});
+
+  @override
+  State<CoachScreen> createState() => _CoachScreenState();
+}
+
+class _CoachScreenState extends State<CoachScreen> {
+  final _messageController = TextEditingController();
+  final _scrollController = ScrollController();
+
+  final List<String> _suggestedPrompts = [
+    "What should I do next?",
+    "Show today's priorities",
+    "Summarize my emails",
+    "Reschedule tasks",
+  ];
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+      );
+    });
+  }
+
+  void _sendMessage({
+    required ConnectivityViewModel connectivity,
+    required ModelViewModel model,
+    required WorkflowViewModel workflow,
+    required CoachViewModel coach,
+    required String text,
+  }) {
+    if (text.trim().isEmpty || coach.isGenerating) return;
+
+    coach.sendCoachMessage(
+      prompt: text,
+      connectedModel: model.connectedModel,
+      tasks: workflow.tasks,
+      filteredEmails: workflow.getFilteredEmails(
+        gmailConnected: connectivity.isGmailConnected,
+        m365Connected: connectivity.isM365Connected,
+      ),
+      rawEmails: workflow.rawEmails,
+      calendarEvents: workflow.getFilteredCalendar(
+        gmailConnected: connectivity.isGmailConnected,
+        m365Connected: connectivity.isM365Connected,
+      ),
+    );
+    _messageController.clear();
+    _scrollToBottom();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final connectivity = context.watch<ConnectivityViewModel>();
+    final model = context.watch<ModelViewModel>();
+    final workflow = context.watch<WorkflowViewModel>();
+    final coach = context.watch<CoachViewModel>();
+
+    final connectedModel = model.connectedModel;
+    final isModelConnected = connectedModel != null;
+
+    final completedCount = workflow.tasks
+        .where((t) => t.status == 'Completed')
+        .length;
+    final totalCount = workflow.tasks.length;
+    final productivityScore = totalCount > 0
+        ? ((completedCount / totalCount) * 100).toInt()
+        : 0;
+
+    final nextTasks = workflow.tasks
+        .where((t) => t.status != 'Completed' && t.priority == 'High')
+        .toList();
+    final nextTaskTitle = nextTasks.isNotEmpty
+        ? nextTasks.first.title
+        : "No urgent tasks remaining";
+    final nextTaskTime = nextTasks.isNotEmpty
+        ? nextTasks.first.time
+        : "Free schedule";
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'AI Chat',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            if (isModelConnected) ...[
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _PulsingDot(),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Active: ${connectedModel.name}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.teal,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, color: Color(0xFF0F172A)),
+            onPressed: () {
+              connectivity.setTabIndex(4); // Switch to Settings tab
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildCoachDashboard(
+                    productivityScore,
+                    completedCount,
+                    totalCount,
+                  ),
+                  const SizedBox(height: 20),
+
+                  _buildRecommendedTask(nextTaskTitle, nextTaskTime, workflow),
+                  const SizedBox(height: 24),
+
+                  const Text(
+                    'Coach Conversation',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (isModelConnected) ...[
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: coach.coachMessages.length,
+                      itemBuilder: (context, index) {
+                        final msg = coach.coachMessages[index];
+                        return _buildChatBubble(msg);
+                      },
+                    ),
+                  ] else ...[
+                    _buildOfflineCard(context, connectivity),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          if (isModelConnected) ...[
+            Container(
+              height: 38,
+              margin: const EdgeInsets.only(bottom: 8),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _suggestedPrompts.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: ActionChip(
+                      label: Text(_suggestedPrompts[index]),
+                      labelStyle: const TextStyle(
+                        color: Color(0xFF4F46E5),
+                        fontSize: 11,
+                      ),
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      // 6. Disable micro-prompts during generation
+                      onPressed: coach.isGenerating
+                          ? null
+                          : () {
+                              _sendMessage(
+                                connectivity: connectivity,
+                                model: model,
+                                workflow: workflow,
+                                coach: coach,
+                                text: _suggestedPrompts[index],
+                              );
+                            },
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            Container(
+              padding: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: 16,
+                top: 4,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.grey[200]!, width: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      style: const TextStyle(
+                        color: Color(0xFF0F172A),
+                        fontSize: 14,
+                      ),
+                      // 7. Prevent enter/submit action while processing
+                      onSubmitted: coach.isGenerating
+                          ? null
+                          : (val) {
+                              _sendMessage(
+                                connectivity: connectivity,
+                                model: model,
+                                workflow: workflow,
+                                coach: coach,
+                                text: val,
+                              );
+                            },
+                      decoration: InputDecoration(
+                        hintText: coach.isGenerating
+                            ? 'Streaming response...'
+                            : 'Ask your AI Chat...',
+                        hintStyle: const TextStyle(color: Color(0xFF64748B)),
+                        filled: true,
+                        fillColor: const Color(0xFFF1F5F9),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        prefixIcon: const Icon(
+                          Icons.mic_none_outlined,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 8. Adaptive Button changes color/icon & hooks into stop generation workflow
+                  CircleAvatar(
+                    backgroundColor: coach.isGenerating
+                        ? Colors.red
+                        : const Color(0xFF4F46E5),
+                    radius: 20,
+                    child: IconButton(
+                      icon: Icon(
+                        coach.isGenerating ? Icons.stop : Icons.send,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      onPressed: coach.isGenerating
+                          ? () => coach.stopCoachGeneration()
+                          : () => _sendMessage(
+                                connectivity: connectivity,
+                                model: model,
+                                workflow: workflow,
+                                coach: coach,
+                                text: _messageController.text,
+                              ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOfflineCard(BuildContext context, ConnectivityViewModel connectivity) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF7C3AED).withValues(alpha: 0.08),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.psychology_alt_outlined,
+              color: Color(0xFF7C3AED),
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Local AI Coach Offline',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Connect an on-device language model to enable private on-device coaching. All data and processing remain strictly on your device.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: Color(0xFF64748B),
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 42,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                connectivity.setTabIndex(4); // Switch to Settings tab
+              },
+              icon: const Icon(Icons.link, color: Colors.white, size: 18),
+              label: const Text(
+                'Connect a Model',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4F46E5),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoachDashboard(int score, int completed, int total) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFE0E7FF), Color(0xFFFAE8FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFC7D2FE)),
+      ),
+      child: Row(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: CircularProgressIndicator(
+                  value: score / 100.0,
+                  backgroundColor: Colors.white60,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    Color(0xFF4F46E5),
+                  ),
+                  strokeWidth: 8,
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$score%',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const Text(
+                    'Score',
+                    style: TextStyle(fontSize: 9, color: Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Great job, Pandi! 👋',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildStatTextRow('Tasks Completed', '$completed/$total'),
+                const SizedBox(height: 6),
+                _buildStatTextRow('Focus Time', '2h 15m'),
+                const SizedBox(height: 6),
+                _buildStatTextRow('Streak', '4 days 🔥'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatTextRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Color(0xFF334155), fontSize: 12),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Color(0xFF4F46E5),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecommendedTask(String title, String time, WorkflowViewModel workflow) {
+    final hasHighTasks = workflow.tasks.any(
+      (t) => t.priority == 'High' && t.status != 'Completed',
+    );
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'RECOMMENDED NEXT STEP',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Color(0xFF4F46E5),
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              if (hasHighTasks)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'High Priority',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            hasHighTasks ? 'Due at $time' : 'All caught up!',
+            style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          if (hasHighTasks)
+            SizedBox(
+              width: double.infinity,
+              height: 38,
+              child: ElevatedButton(
+                onPressed: () {
+                  final next = workflow.tasks.firstWhere(
+                    (t) => t.priority == 'High' && t.status != 'Completed',
+                  );
+                  workflow.updateTaskStatus(next.id, 'InProgress');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Task "${next.title}" moved to In Progress!',
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F46E5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text(
+                  'Start Now',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChatBubble(CoachMessage msg) {
+    return Align(
+      alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints: const BoxConstraints(maxWidth: 280),
+        decoration: BoxDecoration(
+          color: msg.isUser ? const Color(0xFF4F46E5) : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(12),
+            topRight: const Radius.circular(12),
+            bottomLeft: msg.isUser ? const Radius.circular(12) : Radius.zero,
+            bottomRight: msg.isUser ? Radius.zero : const Radius.circular(12),
+          ),
+          border: msg.isUser
+              ? null
+              : Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Text(
+          msg.text,
+          style: TextStyle(
+            color: msg.isUser ? Colors.white : const Color(0xFF0F172A),
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PulsingDot extends StatefulWidget {
+  const _PulsingDot();
+
+  @override
+  State<_PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<_PulsingDot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.teal,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.teal.withValues(alpha: 0.5),
+                blurRadius: 4 + _controller.value * 6,
+                spreadRadius: _controller.value * 3,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

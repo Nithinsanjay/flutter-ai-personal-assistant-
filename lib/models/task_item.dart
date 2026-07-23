@@ -3,7 +3,8 @@ class TaskItem {
   final String title;
   final String time;
   final String priority; // 'High', 'Medium', 'Low'
-  final String status; // 'Today', 'InProgress', 'Completed'
+  final String status; // 'Pending(Today)', 'InProgress', 'Completed'
+  final DateTime dueDate;
   final String? sourceEmailId;
 
   TaskItem({
@@ -12,6 +13,7 @@ class TaskItem {
     required this.time,
     required this.priority,
     required this.status,
+    required this.dueDate,
     this.sourceEmailId,
   });
 
@@ -21,6 +23,7 @@ class TaskItem {
     String? time,
     String? priority,
     String? status,
+    DateTime? dueDate,
     String? sourceEmailId,
   }) {
     return TaskItem(
@@ -29,6 +32,7 @@ class TaskItem {
       time: time ?? this.time,
       priority: priority ?? this.priority,
       status: status ?? this.status,
+      dueDate: dueDate ?? this.dueDate,
       sourceEmailId: sourceEmailId ?? this.sourceEmailId,
     );
   }

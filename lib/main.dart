@@ -1,17 +1,26 @@
-import 'package:ai_personal_asst/screens/auth_screens.dart';
+import 'package:ai_personal_asst/views/local_auth_barrier.dart';
+import 'package:ai_personal_asst/views/navigation_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma_litertlm/flutter_gemma_litertlm.dart';
 import 'package:provider/provider.dart';
-import 'state/app_state.dart';
+import 'viewmodels/connectivity_viewmodel.dart';
+import 'viewmodels/model_viewmodel.dart';
+import 'viewmodels/workflow_viewmodel.dart';
+import 'viewmodels/coach_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterGemma.initialize(inferenceEngines: [LiteRtLmEngine()]);
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppState()..loadModels(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ConnectivityViewModel()),
+        ChangeNotifierProvider(create: (_) => ModelViewModel()..loadModels()),
+        ChangeNotifierProvider(create: (_) => WorkflowViewModel()),
+        ChangeNotifierProvider(create: (_) => CoachViewModel()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -29,11 +38,11 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1), // Indigo
+          seedColor: const Color(0xFF6366F1),
           brightness: Brightness.light,
-          surface: const Color(0xFFF8FAFC), // Slate 100 (Light Mode bg)
+          surface: const Color(0xFFF8FAFC),
         ),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC), // Light Mode bg
+        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -50,7 +59,7 @@ class MyApp extends StatelessWidget {
           indicatorSize: TabBarIndicatorSize.tab,
         ),
       ),
-      home: const SignInScreen(),
+      home: const LocalAuthBarrier(child: NavigationContainer()),
     );
   }
 }
